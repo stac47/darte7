@@ -16,9 +16,8 @@ TVGUIDE = "http://arte.tv/papi/tvguide/videos/stream/player/F/" + \
     "{}_PLUS7-F/ALL/ALL.json"
 
 
-def extract_json_tvguide(url):
-    """ From the URL given on http://www.arte.tv/guide/fr/plus7, this function
-    the JSON TV guide where all the videos urls are stored."""
+def get_json_metadata(url):
+    """ Retrieve the JSON video metadata from Arte+7."""
 
     parsed = urlparse(url)
     query = parsed.query
@@ -26,7 +25,20 @@ def extract_json_tvguide(url):
     http_response = urlopen(TVGUIDE.format(video_id))
     s = http_response.read().decode("utf-8")
     video_metadata = json.loads(s)
-    return video_metadata['videoJsonPlayer']['VSR']['HTTP_REACH_EQ_1']['url']
+    return video_metadata
+
+
+def extract_json_tvguide(url):
+    """ From the URL given on http://www.arte.tv/guide/fr/plus7, this function
+    the JSON TV guide where all the videos urls are stored."""
+
+    video_metadata = get_json_metadata(url)
+    available_videos = video_metadata['videoJsonPlayer']['VSR']
+    for v in available_videos:
+        if available_videos[v]["mimeType"] == 'video/mp4' and \
+           available_videos[v]["bitrate"] < 1000 and \
+           available_videos[v]["versionShortLibelle"] in ('VOF', 'VF') :
+            return available_videos[v]['url']
 
 
 def main():
@@ -35,8 +47,14 @@ def main():
     parser = argparse.ArgumentParser(description=description,
                                      epilog=epilog)
     parser.add_argument("url", help="The URL of the video on Arte+7 site")
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="Display only the video metadata JSON document")
     args = parser.parse_args()
-    print(extract_json_tvguide(args.url))
+    if args.debug:
+        video_metadata = get_json_metadata(args.url)
+        print(json.dumps(video_metadata, sort_keys=True, indent=4))
+    else:
+        print(extract_json_tvguide(args.url))
 
 if __name__ == "__main__":
     main()
