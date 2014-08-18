@@ -7,4 +7,4 @@ Created on 2014-06-28
 @author : Laurent Stacul
 """
 
-__version__ = '0.0.1'
+__version__ = '0.0.3'
